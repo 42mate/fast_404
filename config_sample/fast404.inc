@@ -7,7 +7,8 @@ $conf['fast_404_allow_anon_imagecache'] = TRUE;
 
 $conf['fast_404_exts'] = '/\.(txt|png|gif|jpe?g|css|js|ico|swf|flv|cgi|bat|pl|dll|exe|asp|php|html?|xml)$/i';
 
-$conf['fast_404_html'] = file_get_contents(dirname(__FILE__) . '/themes/diariotag/fast_404.html');
+//Set the path to this file.
+$conf['fast_404_html'] = file_get_contents(dirname(__FILE__) . '/path/to/your/theme/fast_404.html');
 
 $conf['fast_404_path_check'] = TRUE;
 
@@ -32,7 +33,7 @@ $conf['fast_404_string_whitelisting'] = array(
 		'user',
 		'node',
 		'file/ajax',
-		'content'
+		'content',
 		'comments/username',
 		//Some samples, remove it 
 		'gallery',
