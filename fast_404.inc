@@ -110,6 +110,16 @@ function fast_404_path_check() {
  */
 function fast_404_validate_path_drupal() {
 
+  $sql = "SELECT path FROM {menu_router} WHERE ? LIKE CONCAT(path, '%')";
+  if (db_query($sql, array($_GET['q']))->fetchField()) {
+    return TRUE;
+  }
+
+  $sql = "SELECT pid FROM {url_alias} WHERE ? LIKE CONCAT(alias, '%')";
+  if (db_query($sql, array($_GET['q']))->fetchField()) {
+    return TRUE;
+  }
+
   // Check if path_redirect module is installed.
   if (db_query("SELECT name FROM {system} WHERE type = 'module' AND status = 1 AND name = 'path_redirect'")->fetchField()) {
     // Check if path exits in path_redirect table.
@@ -118,15 +128,12 @@ function fast_404_validate_path_drupal() {
     }
   }
 
-  $sql = "SELECT path FROM {menu_router} WHERE ? LIKE CONCAT(path, '%')";
-  $res = db_query($sql, array($_GET['q']))->fetchField();
-  if ($res) {
-    return TRUE;
-  }
-  else {
-    $sql = "SELECT pid FROM {url_alias} WHERE ? LIKE CONCAT(alias, '%')";
-    $res = db_query($sql, array($_GET['q']))->fetchField();
-    return $res == 0 ? FALSE : TRUE;
+  // Check if path_redirect module is installed.
+  if (db_query("SELECT name FROM {system} WHERE type = 'module' AND status = 1 AND name = 'redirect'")->fetchField()) {
+    // Check if path exits in path_redirect table.
+    if (db_query("SELECT rid FROM {redirect} WHERE ? LIKE source", array($_GET['q']))->fetchField()) {
+      return TRUE;
+    }
   }
 
   return FALSE;
@@ -150,7 +157,10 @@ function fast_404_validate_path_mysql() {
 
   $sql = "SELECT path FROM menu_router WHERE path = '%s' OR '%s' LIKE CONCAT(path, '/%')";
   $sql2 = "SELECT pid FROM url_alias WHERE alias = '%s' OR '%s' LIKE CONCAT(alias, '/%')";
-  $sql3 = "SELECT rid FROM path_redirect WHERE '%s' LIKE source";
+  $sql3 = "SELECT rid FROM path_redirect WHERE '%s' LIKE source"; //Drupal 6 module for redirects
+  $sql4 = "SELECT rid FROM redirect WHERE '%s' LIKE source"; //Drupal 6 module for redirects
+  $sql_path_redirect =  "SELECT name FROM system WHERE type = 'module' AND status = 1 AND name = 'path_redirect'";
+  $sql_redirect =  "SELECT name FROM system WHERE type = 'module' AND status = 1 AND name = 'redirect'";
 
   $db = $databases['default']['default'];
 
@@ -158,8 +168,18 @@ function fast_404_validate_path_mysql() {
   if ($databases['default']['default']['driver'] == 'mysqli') {
     $conn = mysqli_connect($db['host'], $db['username'], $db['password'], $db['database'], $db['port']);
 
+    $sql = str_replace('%s', mysqli_real_escape_string($conn, $_GET['q']), $sql);
+    if (mysqli_fetch_row(mysqli_query($conn, $sql))) {
+      return TRUE;
+    }
+
+    $sql2 = str_replace('%s', mysqli_real_escape_string($conn, $_GET['q']), $sql2);
+    if (mysqli_fetch_row(mysqli_query($conn, $sql2))) {
+      return TRUE;
+    }
+
     // Check if path_redirect module is installed.
-    if (mysqli_fetch_row(mysqli_query($conn, "SELECT name FROM system WHERE type = 'module' AND status = 1 AND name = 'path_redirect'"))) {
+    if (mysqli_fetch_row(mysqli_query($conn, $sql_path_redirect))) {
       // Check if path exits in path_redirect table.
       $sql3 = str_replace('%s', mysqli_real_escape_string($conn, $_GET['q']), $sql3);
       if (mysqli_fetch_row(mysqli_query($conn, $sql3))) {
@@ -167,28 +187,37 @@ function fast_404_validate_path_mysql() {
       }
     }
 
-    $sql = str_replace('%s', mysqli_real_escape_string($conn, $_GET['q']), $sql);
-    $res = mysqli_query($conn, $sql);
-    $row = mysqli_fetch_row($res);
-    if (!is_array($row)) {
-      $sql2 = str_replace('%s', mysqli_real_escape_string($conn, $_GET['q']), $sql2);
-      $res = mysqli_query($conn, $sql2);
-      $row = mysqli_fetch_row($res);
-      return is_array($row) > 0 ? TRUE : FALSE;
+    // Check if reirect module is installed.
+    if (mysqli_fetch_row(mysqli_query($conn, $sql_redirect))) {
+      // Check if path exits in path_redirect table.
+      $sql4 = str_replace('%s', mysqli_real_escape_string($conn, $_GET['q']), $sql4);
+      if (mysqli_fetch_row(mysqli_query($conn, $sql4))) {
+        return TRUE;
+      }
     }
-    else {
-      return TRUE;
-    }
+
+    return FALSE;
   }
   elseif ($databases['default']['default']['driver'] == 'mysql') {
     if (isset($db['port'])) {
       $db['host'] = $db['host'] . ':' . $db['port'];
     }
+
     $conn = mysql_connect($db['host'], $db['username'], $db['password']);
     mysql_select_db($db['database'], $conn);
 
+    $sql = str_replace('%s', mysql_real_escape_string($_GET['q']), $sql);
+    if (mysql_fetch_row(mysql_query($sql))) {
+      return TRUE;
+    }
+
+    $sql2 = str_replace('%s', mysql_real_escape_string($_GET['q']), $sql2);
+    if (mysql_fetch_row(mysql_query($sql2))) {
+      return TRUE;
+    }
+
     // Check if path_redirect module is installed.
-    if (mysql_fetch_row(mysql_query( "SELECT name FROM system WHERE type = 'module' AND status = 1 AND name = 'path_redirect'", $conn))) {
+    if (mysql_fetch_row(mysql_query( $sql_path_redirect, $conn))) {
       // Check if path exits in path_redirect table.
       $sql3 = str_replace('%s', mysql_real_escape_string($_GET['q']), $sql3);
       if (mysql_fetch_row(mysql_query($sql3))) {
@@ -196,19 +225,16 @@ function fast_404_validate_path_mysql() {
       }
     }
 
-    $sql = str_replace('%s', mysql_real_escape_string($_GET['q']), $sql);
-    $res = mysql_query($sql);
-    $row = mysql_fetch_array($res);
-    if (!is_array($row)) {
-      $sql2 = str_replace('%s', mysql_real_escape_string($_GET['q']), $sql2);
-      $res = mysql_query($sql2);
-      $row = mysql_fetch_array($res);
+    // Check if path_redirect module is installed.
+    if (mysql_fetch_row(mysql_query( $sql_redirect, $conn))) {
+      // Check if path exits in path_redirect table.
+      $sql4 = str_replace('%s', mysql_real_escape_string($_GET['q']), $sql4);
+      if (mysql_fetch_row(mysql_query($sql4))) {
+        return TRUE;
+      }
+    }
 
-      return is_array($row) > 0 ? TRUE : FALSE;
-    }
-    else {
-      return TRUE;
-    }
+    return FALSE;
   }
   else {
     // We can't check this URL here. Return TRUE to let Drupal continue
