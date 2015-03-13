@@ -1,5 +1,14 @@
 <?php
 
+//Include this file at the bottom of your settings File.
+
+//Uncomment this and set the domain if you have a sperated domain for admin access, you don't need fast404 check in admin sites
+//
+//if ($_SERVER['HTTP_HOST'] === 'editorial.mysite.com') {
+//  return TRUE;
+//}
+//
+
 //Set the right path for your module instalation here.
 include_once('./sites/all/modules/contrib/fast_404/fast_404.inc');
 
