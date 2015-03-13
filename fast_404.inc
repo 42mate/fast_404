@@ -63,7 +63,6 @@ function fast_404_ext_check() {
       }
     }
   }
-//    var_dump($_SERVER['REQUEST_URI'], 'ssss1'); die();
 
   // Load up the blacklisted extensions.
   $exts = variable_get('fast_404_exts', '/\.(txt|png|gif|jpe?g|css|js|ico|swf|flv|cgi|bat|pl|dll|exe|asp|)$/i');
