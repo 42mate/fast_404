@@ -10,7 +10,7 @@ To use it.
 - Include with php, the file fast_404.inc into your settings.php
 
   ```php
-	include ( include dirname(__FILE__) . '/fast_404.inc'; ) 
+	include dirname(__FILE__) . '/fast_404.inc';
   ```
 
 - Enable fast_404 module.
