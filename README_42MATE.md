@@ -7,8 +7,12 @@ To use it.
 - Download and copy the module into your site modules.
 - Look in config_sample for the fast_404.inc file and copy to the site folder (same as settings.php)
 - Edit fast_404.inc with right paths for your module instalation.
-- Include with php include ( include dirname(__FILE__) . '/fast_404.inc'; ) the
-  file fast_404.inc into your settings.php
+- Include with php, the file fast_404.inc into your settings.php
+
+  ```php
+	include ( include dirname(__FILE__) . '/fast_404.inc'; ) 
+  ```
+
 - Enable fast_404 module.
 
 Test your site, unsual paths to looks if they are denied for fast_404, is so, then add the path into the
